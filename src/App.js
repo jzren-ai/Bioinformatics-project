@@ -19,26 +19,21 @@ import {
   Scatter,
 } from 'recharts';
 
-// --- Helper functions for deterministic "randomness" ---
-
 const stringToSeed = (str) => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = (hash * 31 + str.charCodeAt(i)) | 0;
   }
-  return hash >>> 0; // force unsigned
+  return hash >>> 0;
 };
 
 const makeRNG = (seed) => {
   let s = seed;
   return () => {
-    // simple LCG
     s = (s * 1664525 + 1013904223) >>> 0;
     return s / 0xffffffff;
   };
 };
-
-// Simulated deterministic ML prediction
 const predictOffTargets = (seq, chromatin) => {
   const gcCount = (seq.match(/[GC]/gi) || []).length;
   const gcContent = gcCount / seq.length;
@@ -52,8 +47,7 @@ const predictOffTargets = (seq, chromatin) => {
   };
 
   const accessibility = chromatinScores[chromatin] || 0.5;
-
-  // Seeded RNG so same (seq, chromatin) → same outputs
+  
   const seed = stringToSeed(seq + '|' + chromatin);
   const rand = makeRNG(seed);
 
@@ -68,8 +62,8 @@ const predictOffTargets = (seq, chromatin) => {
   const numSites = Math.floor(offTargetProb * 15) + 1;
 
   for (let i = 0; i < numSites; i++) {
-    const mismatch = Math.floor(rand() * 4) + 1; // 1–4
-    const chromosome = `chr${Math.floor(rand() * 22) + 1}`; // chr1–chr22
+    const mismatch = Math.floor(rand() * 4) + 1; 
+    const chromosome = `chr${Math.floor(rand() * 22) + 1}`; 
     const position = Math.floor(rand() * 100_000_000);
     const score =
       (1 - mismatch * 0.2) * accessibility * (0.7 + rand() * 0.3);
@@ -79,16 +73,16 @@ const predictOffTargets = (seq, chromatin) => {
       chromosome,
       position,
       mismatches: mismatch,
-      score, // keep numeric
+      score, 
       chromatinState: chromatin,
-      accessibility: accessibility * 100, // %
+      accessibility: accessibility * 100, 
     });
   }
 
   offTargetSites.sort((a, b) => b.score - a.score);
 
   return {
-    overallRisk: offTargetProb * 100, // %
+    overallRisk: offTargetProb * 100, 
     offTargetSites: offTargetSites.slice(0, 10),
     features: {
       gcContent: gcContent * 100,
@@ -130,7 +124,6 @@ const CRISPRPredictor = () => {
     setError('');
     setLoading(true);
 
-    // Simulate API delay
     setTimeout(() => {
       const result = predictOffTargets(seq, chromatinState);
       setPredictions(result);
